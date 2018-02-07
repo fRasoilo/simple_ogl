@@ -1,8 +1,7 @@
 
 #include "stdio.h"
 
-//#include "simple_ogl.h"
-#include "s_ogl.h"
+#include "simple_ogl.h"
 
 Win32Window main_window = {};
 
@@ -106,9 +105,10 @@ Win32_ProcessMessages_(void)
 internal void
 Win32GLRender()
 {
-    //glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-    //glClear(GL_COLOR_BUFFER_BIT);
-    //SwapBuffers(main_window.device_context);
+    glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    
+    SwapBuffers(main_window.device_context);
 }
 
 int CALLBACK
@@ -120,13 +120,13 @@ WinMain(HINSTANCE Instance,
 
     sgl_win32_window_setup(&main_window, 800, 600, "SimpleOGL");
     sgl_win32_window_create(&main_window,Instance,Win32_WindowCallback_);
-    //sgl_win32_window_ogl_setup(&main_window);
+    sgl_win32_window_ogl_setup(&main_window);
 
     //Loop
     while(main_window.running)
     {
         Win32_ProcessMessages_();
-        
+        Win32GLRender();
     }    
 
     printf("Hey there!\n");
