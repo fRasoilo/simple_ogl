@@ -447,7 +447,7 @@ sgl_win32_window_toggle_fullscreen(SGLWindow* window)
 
 //Win32 Default Example
 #ifdef _WIN32 
-global_variable SGLWindow global_main_window = {};
+global_variable SGLWindow default_main_window = {};
 
 
 
@@ -456,7 +456,7 @@ global_variable SGLWindow global_main_window = {};
 //@NOTE: Change this define to point to your own Win32 Window Callback Function.
 #define sgl_window_callback sgl_default_win32_wnd_callback 
 //@NOTE: Change this define to point to your own function that processes Win32 Messages.
-#define ProcessMessages sgl_default_win32_process_msgs
+#define sgl_win32_process_msgs sgl_default_win32_process_msgs
 //
 
 internal LRESULT CALLBACK
@@ -472,14 +472,14 @@ sgl_default_win32_wnd_callback(HWND window, UINT message, WPARAM WParam, LPARAM 
         }break;     
         case WM_CLOSE:
         {
-            global_main_window.running = false;
+            default_main_window.running = false;
         }break;
         case WM_PAINT:
         {
             PAINTSTRUCT paint;
             HDC dc = BeginPaint(window, &paint);            
             RECT main_rect;
-            GetClientRect(global_main_window.handle, &main_rect);
+            GetClientRect(default_main_window.handle, &main_rect);
             EndPaint(window, &paint);                   
         }break;
         case WM_SIZE:
@@ -558,7 +558,7 @@ char* sgl_default_frag_shader[] =
  "out vec4 color;                 \n"
  "void main()                     \n"
  "{                               \n"                                             
- "    color =  vec4(1, 0, 0, 1);  \n"
+ "    color =  vec4(0.5, 0, 0.5, 1);  \n"
  "}                               \n"
 };
 
@@ -679,7 +679,7 @@ void sgl_init_default_state()
 
 void sgl_default_render(SGLWindow* window)
 {    
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearColor(1.0f, 0.5f, 0.5f, 1.0f);
     glClearDepth(1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -707,6 +707,5 @@ void sgl_default_render(SGLWindow* window)
 }
 
 #endif // SGL_DEFAULT_EXAMPLE
-
 
 // END Default Example ---------------------
