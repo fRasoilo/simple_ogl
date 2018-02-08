@@ -117,7 +117,7 @@ WinMain(HINSTANCE Instance,
         int ShowCode)
 {
 
-    sgl_win32_window_setup(&main_window, 800, 600, "SimpleOGL");
+    sgl_win32_window_setup(&main_window);
     sgl_win32_window_create(&main_window,Instance,Win32_WindowCallback_);
     sgl_win32_window_ogl_setup(&main_window);
 

@@ -1,10 +1,45 @@
+#pragma once
 
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#endif
 
-#include <gl/gl.h>
+//Simple OGL --------------
+
+//=============================================================================
+// Summary :
+//
+// simple_ogl is small library that provides a quick and simple way to create an 
+// OpenGL ready Window.
+//
+// It is a single file header that should be very easy to drop-in and start using in any pre-existing project.
+//
+//
+//=============================================================================
+// Revision History :
+//
+//  
+//
+//===============================================================================  
+//  You MUST define SIMPLE_OGL_IMPLEMENTATION
+//
+//  in exactly *one* C or C++ file that includes this header, BEFORE the include
+//  like so:
+//
+//  #define SIMPLE_OGL_IMPLEMENTATION
+//  #include "simple_ogl.h"
+//
+//  All other files should just include "simple_ogl.h" without the define
+//=============================================================================
+// Basic Usage / Quick Start :
+//
+// 
+//
+//===============================================================================
+// API  : API reference can be found further down.
+//        In the following sections (search for) :
+//===============================================================================  
+
+//@TODO: Need to link to OpenGL32.lib
+
+
 
 // [INTERNAL] Types --------------
 #include <stdint.h>
@@ -31,7 +66,32 @@ typedef int32 bool32;
 #define InvalidCodePath SGL_Assert(!"InvalidCodePath")
 #define InvalidDefaultCase default: {InvalidCodePath;} break
 
-//[INTERNAL]
+//[INTERNAL] OpenGL Enums and Types not found in gl.h
+//@NOTE: gl.h can be found in almost all win32 systems while the other headers are not usually present.
+
+typedef char			GLchar;
+typedef ptrdiff_t		GLsizeiptr;
+typedef uint64_t    	GLuint64;
+
+//Enums in glcorearb.h from https://www.khronos.org/registry/OpenGL/index_gl.php#headers
+#define GL_TEXTURE0								0x84C0
+#define GL_TEXTURE1								0x84C1
+#define GL_TEXTURE_RECTANGLE					0x84F5
+#define GL_RGBA_INTEGER							0x8D99
+#define GL_HALF_FLOAT							0x140B
+#define GL_RGBA16UI								0x8D76
+#define GL_RGBA16F								0x881A
+#define GL_VERTEX_SHADER						0x8B31
+#define GL_FRAGMENT_SHADER						0x8B30
+#define GL_ARRAY_BUFFER							0x8892
+#define GL_ELEMENT_ARRAY_BUFFER					0x8893
+#define GL_STATIC_DRAW							0x88E4
+#define GL_WRITE_ONLY							0x88B9
+#define GL_QUERY_RESULT							0x8866
+#define GL_TIME_ELAPSED							0x88BF
+#define GL_TIMESTAMP							0x8E28
+#define GL_FRAMEBUFFER_SRGB						0x8DB9
+
 // WGL Enums -- in wglext.h from https://www.khronos.org/registry/OpenGL/index_gl.php#headers
 #ifdef _WIN32
 
@@ -54,6 +114,29 @@ typedef int32 bool32;
 
 #endif //_WIN32
 
+//@TODO: Explain this bit more
+//Macro for Declaring OpenGL Function Pointers
+#define DECLARE_GL_FUNC_PTR(return_type, func_name, params) typedef return_type func_name##_func_signature params; \
+                                                            func_name##_func_signature *func_name = nullptr; 
+
+//Macro for getting the adress of the given OpenGL function and checking we have a valid address (not null).
+#define GET_GL_FUNC_SAFE(name) name = (name##_func_signature *)wglGetProcAddress(#name); \
+                               SGL_Assert(name);
+
+
+
+//
+//--Win32 Specific --
+
+//@TODO: The default Window32 callback will need to link to User32.lib
+//@TODO: SwapBuffers will need to link to Gdi32.lib
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+
+#include <gl/gl.h>
+
 struct Win32Window{
     int32 width;
     int32 height;
@@ -74,24 +157,17 @@ struct Win32Window{
 #define WIN32_WINDOW_CALLBACK(name) LRESULT CALLBACK name(HWND Window,UINT Message,WPARAM WParam,LPARAM LParam)
 typedef WIN32_WINDOW_CALLBACK(win32_window_callback);
 
-//@TODO: Explain this bit more
-//Macro for Declaring OpenGL Function Pointers
-#define DECLARE_GL_FUNC_PTR(return_type, func_name, params) typedef return_type func_name##_func_signature params; \
-                                                            func_name##_func_signature *func_name = nullptr; 
 
 //[INTERNAL] - Declaring Win32 specific OpenGL function pointers.
 DECLARE_GL_FUNC_PTR(BOOL ,wglChoosePixelFormatARB, (HDC , const int *, const FLOAT *, UINT , int *, UINT *))
 DECLARE_GL_FUNC_PTR(HGLRC ,wglCreateContextAttribsARB, (HDC , HGLRC , const int *))
 
 
-//Macro for getting the adress of the given OpenGL function and checking we have a valid address.
-#define GET_GL_FUNC_SAFE(name) name = (name##_func_signature *)wglGetProcAddress(#name); \
-                               SGL_Assert(name);
 
 
 
 internal void 
-sgl_win32_window_setup(Win32Window* window, int32 width, int32 height, char* title, bool32 full_screen = 0)
+sgl_win32_window_setup(Win32Window* window,char* title = "SimpleOGL Window", int32 width = 1920, int32 height = 1080, bool32 full_screen = 0)
 {    
     window->width  = width;//1920
     window->height = height;//1080
@@ -213,3 +289,5 @@ sgl_win32_window_ogl_setup(Win32Window* window, int32 major_version = 0, int32 m
 
     return true;
 }
+
+#endif //_WIN32
