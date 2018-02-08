@@ -3,7 +3,7 @@
 
 #include "simple_ogl.h"
 
-Win32Window main_window = {};
+SGLWindow main_window = {};
 
 internal LRESULT CALLBACK
 Win32_WindowCallback_(HWND   Window,UINT Message, WPARAM WParam, LPARAM LParam)
@@ -117,7 +117,7 @@ WinMain(HINSTANCE Instance,
         int ShowCode)
 {
 
-    sgl_win32_window_setup(&main_window);
+    //sgl_win32_window_setup(&main_window);
     sgl_win32_window_create(&main_window,Instance,Win32_WindowCallback_);
     sgl_win32_window_ogl_setup(&main_window);
 

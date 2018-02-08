@@ -125,33 +125,44 @@ typedef uint64_t    	GLuint64;
 
 
 
-//
-//--Win32 Specific --
-
-//@TODO: The default Window32 callback will need to link to User32.lib
-//@TODO: SwapBuffers will need to link to Gdi32.lib
-
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#endif //_WIN32
 
-#include <gl/gl.h>
-
-struct Win32Window{
+struct SGLWindow {
+    //platorm independent part
+    bool32 initialized;
     int32 width;
     int32 height;
-    HWND  handle;
-
     char* title;
 
     bool32 full_screen;
     bool32 running;
 
-    WINDOWPLACEMENT window_position;
-    
-    HDC device_context;
-    HGLRC rendering_context;    
+    union 
+    {
+        //Win32
+        struct {
+            HWND  handle;
+            WINDOWPLACEMENT window_position;
+            HDC device_context;
+            HGLRC rendering_context;    
+        };
+        //@TODO: Other OS
+    };
 };
+
+//
+// Win32 ---------------------
+
+//@TODO: The default Window32 callback will need to link to User32.lib
+//@TODO: SwapBuffers will need to link to Gdi32.lib
+
+
+
+#ifdef _WIN32
+#include <gl/gl.h>
 
 //[INTERNAL] Function Pointers Typedefs
 #define WIN32_WINDOW_CALLBACK(name) LRESULT CALLBACK name(HWND Window,UINT Message,WPARAM WParam,LPARAM LParam)
@@ -163,12 +174,10 @@ DECLARE_GL_FUNC_PTR(BOOL ,wglChoosePixelFormatARB, (HDC , const int *, const FLO
 DECLARE_GL_FUNC_PTR(HGLRC ,wglCreateContextAttribsARB, (HDC , HGLRC , const int *))
 
 
-
-
-
 internal void 
-sgl_win32_window_setup(Win32Window* window,char* title = "SimpleOGL Window", int32 width = 1920, int32 height = 1080, bool32 full_screen = 0)
+sgl_win32_window_setup(SGLWindow* window,char* title = "SimpleOGL Window", int32 width = 800, int32 height = 600, bool32 full_screen = 0)
 {    
+    window->initialized = true;
     window->width  = width;//1920
     window->height = height;//1080
     window->handle = 0;
@@ -178,10 +187,14 @@ sgl_win32_window_setup(Win32Window* window,char* title = "SimpleOGL Window", int
     window->window_position = {};
 }
 
+//@TODO: Should this be the only function in the simplest API possible?
 internal void
-sgl_win32_window_create(Win32Window* win32_window,HINSTANCE instance,win32_window_callback* window_callback)
+sgl_win32_window_create(SGLWindow* window,HINSTANCE instance,win32_window_callback* window_callback)
 {
 
+    if(!window->initialized){
+        sgl_win32_window_setup(window);
+    }
     //TODO: Make it so that we can make a fullscreen window.    
     WNDCLASSA window_class = {};
     window_class.style = CS_HREDRAW|CS_VREDRAW|CS_OWNDC; //TODO: Try CS_OWNDC
@@ -194,13 +207,13 @@ sgl_win32_window_create(Win32Window* win32_window,HINSTANCE instance,win32_windo
     
     if(RegisterClassA(&window_class))
     {
-        RECT window_rect = {0 ,0, win32_window->width, win32_window->height};
+        RECT window_rect = {0 ,0, window->width, window->height};
         DWORD style = WS_OVERLAPPEDWINDOW|WS_VISIBLE|WS_CLIPCHILDREN|WS_CLIPSIBLINGS;
         AdjustWindowRect(&window_rect, style, 0);
         
-        win32_window->handle = CreateWindowExA( WS_EX_WINDOWEDGE/*|WS_EX_COMPOSITED*/, //WS_EX_TOPMOST|WS_EX_LAYERED, //TODO: Experiment with this 
+        window->handle = CreateWindowExA( WS_EX_WINDOWEDGE/*|WS_EX_COMPOSITED*/, //WS_EX_TOPMOST|WS_EX_LAYERED, //TODO: Experiment with this 
                                                 window_class.lpszClassName, 
-                                                win32_window->title,
+                                                window->title,
                                                 style, //TODO: Experiment with this 
                                                 CW_USEDEFAULT,
                                                 CW_USEDEFAULT,
@@ -216,7 +229,7 @@ sgl_win32_window_create(Win32Window* win32_window,HINSTANCE instance,win32_windo
 
 //@TODO: Check the name on this.
 internal bool32
-sgl_win32_window_ogl_setup(Win32Window* window, int32 major_version = 0, int32 minor_version = 0)
+sgl_win32_window_ogl_setup(SGLWindow* window, int32 major_version = 0, int32 minor_version = 0)
 {
     window->device_context = GetDC(window->handle);
 
@@ -290,4 +303,43 @@ sgl_win32_window_ogl_setup(Win32Window* window, int32 major_version = 0, int32 m
     return true;
 }
 
+internal void
+sgl_win32_window_toggle_fullscreen(SGLWindow* window)
+{
+    //@NOTE: Taken from Casey Muratori and Raymond Chen
+    //http://blogs.msdn.com/b/oldnewthing/archive/2010/04/12/9994016.aspx
+
+    DWORD style = GetWindowLong(window->handle,GWL_STYLE);
+    if(style & WS_OVERLAPPEDWINDOW)
+    {
+        MONITORINFO monitor_info = {sizeof(monitor_info)};
+        
+        window->window_position = {sizeof(window->window_position)};
+        if(GetWindowPlacement(window->handle, &window->window_position) &&
+           GetMonitorInfo(MonitorFromWindow(window->handle, MONITOR_DEFAULTTOPRIMARY), &monitor_info))
+        {
+            SetWindowLong(window->handle, GWL_STYLE, style & ~WS_OVERLAPPEDWINDOW);
+            SetWindowPos(window->handle, HWND_TOP,
+                         monitor_info.rcMonitor.left,    monitor_info.rcMonitor.top,
+                         monitor_info.rcMonitor.right -  monitor_info.rcMonitor.left,
+                         monitor_info.rcMonitor.bottom - monitor_info.rcMonitor.top,
+                         SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+        }
+    }
+    else
+    {
+        SetWindowLong(window->handle, GWL_STYLE, style | WS_OVERLAPPEDWINDOW);
+        SetWindowPlacement(window->handle, &window->window_position);
+        SetWindowPos(window->handle, 0, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                     SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+    }
+}
+
 #endif //_WIN32
+
+
+// END Win32 ---------------------
+
+// Platform independent
+
