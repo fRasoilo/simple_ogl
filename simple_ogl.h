@@ -69,6 +69,13 @@ typedef int32 bool32;
 //[INTERNAL] OpenGL Enums and Types not found in gl.h
 //@NOTE: gl.h can be found in almost all win32 systems while the other headers are not usually present.
 
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include <gl/gl.h>
+#endif //_WIN32
+
 typedef char			GLchar;
 typedef ptrdiff_t		GLsizeiptr;
 typedef uint64_t    	GLuint64;
@@ -91,6 +98,13 @@ typedef uint64_t    	GLuint64;
 #define GL_TIME_ELAPSED							0x88BF
 #define GL_TIMESTAMP							0x8E28
 #define GL_FRAMEBUFFER_SRGB						0x8DB9
+#define GL_COMPILE_STATUS                       0x8B81
+#define GL_INFO_LOG_LENGTH                      0x8B84
+#define GL_GEOMETRY_SHADER                      0x8DD9
+#define GL_LINK_STATUS                          0x8B82
+
+
+
 
 // WGL Enums -- in wglext.h from https://www.khronos.org/registry/OpenGL/index_gl.php#headers
 #ifdef _WIN32
@@ -124,11 +138,52 @@ typedef uint64_t    	GLuint64;
                                SGL_Assert(name);
 
 
+//@FIXME : IMCOMPLETE LIST!
+// DECLARING ALL THE OPENGL FUNCTIONS WE WILL NEED --------------------------------------------------------------------------------
+	DECLARE_GL_FUNC_PTR(void, glActiveTexture, (GLenum))
+	DECLARE_GL_FUNC_PTR(void, glMultiDrawElements, (GLenum, const GLsizei *, GLenum, const void *const *, GLsizei))
+	DECLARE_GL_FUNC_PTR(void, glEnableVertexAttribArray, (GLuint))
+	DECLARE_GL_FUNC_PTR(void, glDisableVertexAttribArray, (GLuint))
+	DECLARE_GL_FUNC_PTR(void, glVertexAttribPointer, (GLuint, GLint, GLenum, GLboolean, GLsizei, const void *))
+	DECLARE_GL_FUNC_PTR(void, glGenBuffers, (GLsizei, GLuint *))
+	DECLARE_GL_FUNC_PTR(void, glDeleteBuffers, (GLsizei, const GLuint *))
+	DECLARE_GL_FUNC_PTR(void, glBindBuffer, (GLenum, GLuint))
+	DECLARE_GL_FUNC_PTR(void, glBufferData, (GLenum, GLsizeiptr, const void *, GLenum))
+	DECLARE_GL_FUNC_PTR(void *, glMapBuffer, (GLenum, GLenum))
+	DECLARE_GL_FUNC_PTR(GLboolean, glUnmapBuffer, (GLenum))
+	DECLARE_GL_FUNC_PTR(GLuint, glCreateShader, (GLenum))
+	DECLARE_GL_FUNC_PTR(void, glDeleteShader, (GLuint))
+	DECLARE_GL_FUNC_PTR(void, glShaderSource, (GLuint, GLsizei, const GLchar **, const GLint *))
+	DECLARE_GL_FUNC_PTR(void, glCompileShader, (GLuint))
+	DECLARE_GL_FUNC_PTR(void, glAttachShader, (GLuint, GLuint))
+	DECLARE_GL_FUNC_PTR(GLuint, glCreateProgram, (void))
+	DECLARE_GL_FUNC_PTR(void, glDeleteProgram, (GLuint))
+	DECLARE_GL_FUNC_PTR(void, glLinkProgram, (GLuint))
+	DECLARE_GL_FUNC_PTR(void, glUseProgram, (GLuint))
+	DECLARE_GL_FUNC_PTR(GLint, glGetUniformLocation, (GLuint, const GLchar *))
+	DECLARE_GL_FUNC_PTR(void, glUniform1i, (GLint, GLint))
+	DECLARE_GL_FUNC_PTR(void, glUniform4f, (GLint, GLfloat, GLfloat, GLfloat, GLfloat))
+	DECLARE_GL_FUNC_PTR(void, glUniform4fv, (GLint, GLsizei, const GLfloat *))
+	DECLARE_GL_FUNC_PTR(void, glGenQueries, (GLsizei, GLuint *))
+	DECLARE_GL_FUNC_PTR(void, glDeleteQueries, (GLsizei, const GLuint *))
+	DECLARE_GL_FUNC_PTR(void, glBeginQuery, (GLenum, GLuint))
+	DECLARE_GL_FUNC_PTR(void, glEndQuery, (GLenum))
+    DECLARE_GL_FUNC_PTR(void, glGenVertexArrays, (GLsizei, GLuint *))
+    DECLARE_GL_FUNC_PTR(void, glDeleteVertexArrays, (GLsizei, const GLuint *))
+    DECLARE_GL_FUNC_PTR(void, glBindVertexArray, (GLuint))
+    DECLARE_GL_FUNC_PTR(void, glGetShaderiv, (GLuint, GLenum, GLint *))
+    DECLARE_GL_FUNC_PTR(void, glGetShaderInfoLog, (GLuint, GLsizei, GLsizei, GLchar *))
+    DECLARE_GL_FUNC_PTR(void, glGetProgramiv, (GLuint, GLenum, GLint *)) 
+    DECLARE_GL_FUNC_PTR(void, glGetProgramInfoLog, (GLuint, GLsizei, GLsizei *, GLchar *))
+    DECLARE_GL_FUNC_PTR(void, glDetachShader, (GLuint, GLuint))
 
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#endif //_WIN32
+// END GL FUNCTION DECLARATION -------------------------------------------------------------------------------------------------------
+//
+//
+//
+
+
+
 
 struct SGLWindow {
     //platorm independent part
@@ -153,21 +208,58 @@ struct SGLWindow {
     };
 };
 
+void sgl_load_gl_functions()
+{
+    GET_GL_FUNC_SAFE(glActiveTexture)
+	GET_GL_FUNC_SAFE(glMultiDrawElements)
+	GET_GL_FUNC_SAFE(glEnableVertexAttribArray)
+	GET_GL_FUNC_SAFE(glDisableVertexAttribArray)
+	GET_GL_FUNC_SAFE(glVertexAttribPointer)
+	GET_GL_FUNC_SAFE(glGenBuffers)
+	GET_GL_FUNC_SAFE(glDeleteBuffers)
+	GET_GL_FUNC_SAFE(glBindBuffer)
+	GET_GL_FUNC_SAFE(glBufferData)
+	GET_GL_FUNC_SAFE(glMapBuffer)
+	GET_GL_FUNC_SAFE(glUnmapBuffer)
+	GET_GL_FUNC_SAFE(glCreateShader)
+	GET_GL_FUNC_SAFE(glDeleteShader)
+	GET_GL_FUNC_SAFE(glShaderSource)
+	GET_GL_FUNC_SAFE(glCompileShader)
+	GET_GL_FUNC_SAFE(glAttachShader)
+	GET_GL_FUNC_SAFE(glCreateProgram)
+	GET_GL_FUNC_SAFE(glDeleteProgram)
+	GET_GL_FUNC_SAFE(glLinkProgram)
+	GET_GL_FUNC_SAFE(glUseProgram)
+	GET_GL_FUNC_SAFE(glGetUniformLocation)
+	GET_GL_FUNC_SAFE(glUniform1i)
+	GET_GL_FUNC_SAFE(glUniform4f)
+	GET_GL_FUNC_SAFE(glUniform4fv)
+	GET_GL_FUNC_SAFE(glGenQueries)
+	GET_GL_FUNC_SAFE(glDeleteQueries)
+	GET_GL_FUNC_SAFE(glBeginQuery)
+	GET_GL_FUNC_SAFE(glEndQuery)
+    GET_GL_FUNC_SAFE(glGenVertexArrays)
+    GET_GL_FUNC_SAFE(glDeleteVertexArrays)
+    GET_GL_FUNC_SAFE(glBindVertexArray)
+    GET_GL_FUNC_SAFE(glGetShaderiv)
+    GET_GL_FUNC_SAFE(glGetShaderInfoLog)
+    GET_GL_FUNC_SAFE(glGetProgramiv)
+    GET_GL_FUNC_SAFE(glGetProgramInfoLog)
+    GET_GL_FUNC_SAFE(glDetachShader)
+}
+
 //
 // Win32 ---------------------
 
 //@TODO: The default Window32 callback will need to link to User32.lib
 //@TODO: SwapBuffers will need to link to Gdi32.lib
 
-
-
 #ifdef _WIN32
-#include <gl/gl.h>
+
 
 //[INTERNAL] Function Pointers Typedefs
 #define WIN32_WINDOW_CALLBACK(name) LRESULT CALLBACK name(HWND Window,UINT Message,WPARAM WParam,LPARAM LParam)
 typedef WIN32_WINDOW_CALLBACK(win32_window_callback);
-
 
 //[INTERNAL] - Declaring Win32 specific OpenGL function pointers.
 DECLARE_GL_FUNC_PTR(BOOL ,wglChoosePixelFormatARB, (HDC , const int *, const FLOAT *, UINT , int *, UINT *))
@@ -257,7 +349,7 @@ sgl_win32_window_ogl_setup(SGLWindow* window, int32 major_version = 0, int32 min
     {
         //We can now create a modern OpenGL context.
 
-        //@TODO: Load OpenGL extensions and functions.
+        
         GET_GL_FUNC_SAFE(wglCreateContextAttribsARB)
 
         if(wglCreateContextAttribsARB)
@@ -297,6 +389,8 @@ sgl_win32_window_ogl_setup(SGLWindow* window, int32 major_version = 0, int32 min
     {
         SGL_Assert(!"We should not be here!");
     }
+
+    sgl_load_gl_functions();
 
     ReleaseDC(window->handle, window->device_context);
 
@@ -341,5 +435,278 @@ sgl_win32_window_toggle_fullscreen(SGLWindow* window)
 
 // END Win32 ---------------------
 
-// Platform independent
+// Platform Independent ---------------------
 
+
+// END Platform Independent ---------------------
+
+
+// Default Example ---------------------
+
+#ifdef SGL_DEFAULT_EXAMPLE
+
+//Win32 Default Example
+#ifdef _WIN32 
+global_variable SGLWindow global_main_window = {};
+
+
+
+
+//@TODO: Move this up to the API section.
+//@NOTE: Change this define to point to your own Win32 Window Callback Function.
+#define sgl_window_callback sgl_default_win32_wnd_callback 
+//@NOTE: Change this define to point to your own function that processes Win32 Messages.
+#define ProcessMessages sgl_default_win32_process_msgs
+//
+
+internal LRESULT CALLBACK
+sgl_default_win32_wnd_callback(HWND window, UINT message, WPARAM WParam, LPARAM LParam)
+{
+    LRESULT result = 0;
+
+    switch(message)
+    {
+        case WM_CREATE:
+        {       
+            return(0);
+        }break;     
+        case WM_CLOSE:
+        {
+            global_main_window.running = false;
+        }break;
+        case WM_PAINT:
+        {
+            PAINTSTRUCT paint;
+            HDC dc = BeginPaint(window, &paint);            
+            RECT main_rect;
+            GetClientRect(global_main_window.handle, &main_rect);
+            EndPaint(window, &paint);                   
+        }break;
+        case WM_SIZE:
+        {
+        }break;
+        case WM_MOUSEMOVE:
+        {
+        }break;
+        case WM_KEYDOWN:
+        {
+            switch(WParam)
+            {
+            }
+        }break;
+        
+        default:
+        {
+            //@NOTE: Default window handling.
+            result = DefWindowProcA(window, message, WParam, LParam);
+        }break;
+    }
+    return(result);
+}
+
+internal void
+sgl_default_win32_process_msgs(void)
+{
+    MSG message;
+    while(PeekMessage(&message, 0, 0, 0, PM_REMOVE))
+    {
+        //NOTE: For now lets just translate and dispatch all message types trough Windows.
+        TranslateMessage(&message);
+        //NOTE: This will pipe the messages to the Win32MainWindowCallback func
+        DispatchMessageA(&message);               
+    }
+}
+
+
+#else
+    //@TODO: Other OS
+   #error No other OS defined!
+#endif //_WIN32 
+
+
+
+//Example Triangle.
+GLfloat triangle_vertex_positions[] = {
+   -1.0f, -1.0f, 0.0f,
+   1.0f, -1.0f, 0.0f,
+   0.0f,  1.0f, 0.0f,
+};
+
+struct sgl_default_renderer{
+    GLuint index_buffer;
+    GLuint vertex_buffer;
+    GLuint program_default; 
+};
+
+global_variable sgl_default_renderer sgl_default_ogl;
+
+//Example Default Shaders
+char* sgl_default_vertex_shader[] =
+{"#version 330                                                      \n"
+ "//Default.VERT                                                    \n"
+ "layout (location = 0) in vec3 vertexPosition_modelspace;          \n"
+ "void main()                                                       \n"
+ "{                                                                 \n"
+ "gl_Position.xyz = vertexPosition_modelspace;                      \n"
+ "gl_Position.w = 1.0;                                              \n"
+ "}                                                                 \n"
+};
+
+char* sgl_default_frag_shader[] =
+{"#version 330                    \n"
+ "//Default FRAG SHADER           \n"
+ "out vec4 color;                 \n"
+ "void main()                     \n"
+ "{                               \n"                                             
+ "    color =  vec4(1, 0, 0, 1);  \n"
+ "}                               \n"
+};
+
+GLuint
+sgl_internal_shader_create(GLenum shader_type,const char* shader_file)
+{
+    GLuint shader = glCreateShader(shader_type);
+    glShaderSource(shader, 1,&shader_file, NULL);
+    glCompileShader(shader);
+    
+    GLint status;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+    if (status == GL_FALSE)
+    {
+        GLint info_log_length;
+        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &info_log_length);
+
+        //TODO(filipe): Get rid of this new...
+        GLchar *info_log = new GLchar[info_log_length + 1];
+        glGetShaderInfoLog(shader, info_log_length, NULL, info_log);
+
+        const char *string_shader_type = NULL;
+        switch(shader_type)
+        {
+            case GL_VERTEX_SHADER:   string_shader_type = "vertex"; break;
+            case GL_GEOMETRY_SHADER: string_shader_type = "geometry"; break;
+            case GL_FRAGMENT_SHADER: string_shader_type = "fragment"; break;
+        }
+        fprintf(stderr, "Compile failure in %s shader:\n%s\n",
+                string_shader_type, info_log);
+        
+        delete(info_log);
+    }
+    return shader;
+}
+
+GLuint
+sgl_internal_program_create(GLuint* shader_list, int size, char* debug_name)
+{
+    GLuint program = glCreateProgram();
+    
+    for(size_t index = 0; index < size; ++index)
+    {
+        glAttachShader(program, shader_list[index]);
+    }
+    glLinkProgram(program);
+
+    GLint status;
+    glGetProgramiv (program, GL_LINK_STATUS, &status);
+    if (status == GL_FALSE)
+    {
+        GLint info_log_length;
+        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &info_log_length);
+
+        GLchar *string_info_log = new GLchar[info_log_length + 1];
+        glGetProgramInfoLog(program, info_log_length, NULL, string_info_log);
+            
+        fprintf(stderr, "Linker failure in Program [%s]: %s\n",debug_name,  string_info_log);
+
+        delete(string_info_log);
+    }
+    for(size_t index = 0; index < size; ++index)
+    {
+        glDetachShader(program, shader_list[index]);
+    }
+    return program;
+}
+
+internal void sgl_init_default_program()
+{
+    const int32 shader_list_size = 2;
+    //NOTE(filipe): Triangle Example
+    GLuint shader_list[shader_list_size] = 
+    {
+        sgl_internal_shader_create(GL_VERTEX_SHADER,sgl_default_vertex_shader[0]),
+        sgl_internal_shader_create(GL_FRAGMENT_SHADER,sgl_default_frag_shader[0])
+    };
+
+    sgl_default_ogl.program_default = sgl_internal_program_create(shader_list, shader_list_size, "SGL Default Program");
+    for(size_t index = 0; index < shader_list_size; ++index)
+    {
+        glDeleteShader(shader_list[index]);
+    }
+}
+
+
+void sgl_init_default_state()
+{
+    //Init default buffers
+    glGenBuffers(1, &sgl_default_ogl.index_buffer);
+    //InitVertexBuffer(&sgl_default_ogl.VertexBuffer,triangle_vertex_positions,ArrayCount(triangle_vertex_positions));    
+    //
+
+    int32 length = sizeof(triangle_vertex_positions) / sizeof(triangle_vertex_positions[0]);
+    int32 size = length*sizeof(triangle_vertex_positions[0]);
+    glGenBuffers(1, &sgl_default_ogl.vertex_buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, sgl_default_ogl.vertex_buffer);
+    glBufferData(GL_ARRAY_BUFFER,
+                 size,
+                 triangle_vertex_positions,
+                 GL_STATIC_DRAW);    
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    sgl_init_default_program();
+    
+    //GL state 
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);        
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LEQUAL);
+    glDepthRange(0.0f, 1.0f);
+    
+    glEnable (GL_BLEND);
+    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+void sgl_default_render(SGLWindow* window)
+{    
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearDepth(1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(sgl_default_ogl.program_default);
+        
+    //Draw Commands
+
+    //NOTE: Triangle Example
+    glBindBuffer(GL_ARRAY_BUFFER, sgl_default_ogl.vertex_buffer);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);    
+    glDrawArrays(GL_TRIANGLES,0, 3);
+    glDisableVertexAttribArray(0);
+
+    //End Draw Commands
+    glUseProgram(0);    
+
+#ifdef _WIN32
+    SwapBuffers(window->device_context); 
+#else
+    //@TODO: Other OS
+   #error No other OS defined!
+#endif //_WIN32 
+
+}
+
+#endif // SGL_DEFAULT_EXAMPLE
+
+
+// END Default Example ---------------------

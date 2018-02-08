@@ -1,6 +1,8 @@
 
 #include "stdio.h"
 
+#define SGL_DEFAULT_EXAMPLE 
+
 #include "simple_ogl.h"
 
 SGLWindow main_window = {};
@@ -109,6 +111,8 @@ Win32GLRender()
     glClear(GL_COLOR_BUFFER_BIT);
     SwapBuffers(main_window.device_context);
 }
+
+
 
 int CALLBACK
 WinMain(HINSTANCE Instance,
