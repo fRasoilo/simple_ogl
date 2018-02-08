@@ -31,6 +31,29 @@ typedef int32 bool32;
 #define InvalidCodePath SGL_Assert(!"InvalidCodePath")
 #define InvalidDefaultCase default: {InvalidCodePath;} break
 
+//[INTERNAL]
+// WGL Enums -- in wglext.h from https://www.khronos.org/registry/OpenGL/index_gl.php#headers
+#ifdef _WIN32
+
+    #define WGL_CONTEXT_MAJOR_VERSION_ARB			0x2091
+    #define WGL_CONTEXT_MINOR_VERSION_ARB			0x2092
+    #define WGL_CONTEXT_PROFILE_MASK_ARB			0x9126
+    #define WGL_CONTEXT_CORE_PROFILE_BIT_ARB		0x00000001
+    #define WGL_DRAW_TO_WINDOW_ARB					0x2001
+    #define WGL_ACCELERATION_ARB					0x2003
+    #define WGL_SUPPORT_OPENGL_ARB					0x2010
+    #define WGL_DOUBLE_BUFFER_ARB					0x2011
+    #define WGL_PIXEL_TYPE_ARB						0x2013
+    #define WGL_COLOR_BITS_ARB						0x2014
+    #define WGL_ALPHA_BITS_ARB						0x201B
+    #define WGL_FULL_ACCELERATION_ARB				0x2027
+    #define WGL_TYPE_RGBA_ARB						0x202B
+    #define WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB		0x20A9
+    #define WGL_DEPTH_BITS_ARB                      0x2022
+    #define WGL_STENCIL_BITS_ARB                    0x2023
+
+#endif //_WIN32
+
 struct Win32Window{
     int32 width;
     int32 height;
@@ -50,6 +73,20 @@ struct Win32Window{
 //[INTERNAL] Function Pointers Typedefs
 #define WIN32_WINDOW_CALLBACK(name) LRESULT CALLBACK name(HWND Window,UINT Message,WPARAM WParam,LPARAM LParam)
 typedef WIN32_WINDOW_CALLBACK(win32_window_callback);
+
+//@TODO: Explain this bit more
+//Macro for Declaring OpenGL Function Pointers
+#define DECLARE_GL_FUNC_PTR(return_type, func_name, params) typedef return_type func_name##_func_signature params; \
+                                                            func_name##_func_signature *func_name = nullptr; 
+
+//[INTERNAL] - Declaring Win32 specific OpenGL function pointers.
+DECLARE_GL_FUNC_PTR(BOOL ,wglChoosePixelFormatARB, (HDC , const int *, const FLOAT *, UINT , int *, UINT *))
+DECLARE_GL_FUNC_PTR(HGLRC ,wglCreateContextAttribsARB, (HDC , HGLRC , const int *))
+
+
+//Macro for getting the adress of the given OpenGL function and checking we have a valid address.
+#define GET_GL_FUNC_SAFE(name) name = (name##_func_signature *)wglGetProcAddress(#name); \
+                               SGL_Assert(name);
 
 
 
@@ -129,12 +166,47 @@ sgl_win32_window_ogl_setup(Win32Window* window, int32 major_version = 0, int32 m
     window->rendering_context = wglCreateContext(window->device_context);
     if(wglMakeCurrent(window->device_context, window->rendering_context))
     {
+        //We can now create a modern OpenGL context.
 
+        //@TODO: Load OpenGL extensions and functions.
+        GET_GL_FUNC_SAFE(wglCreateContextAttribsARB)
+
+        if(wglCreateContextAttribsARB)
+        {
+            const int context_attrib_list[] =
+            {
+                //WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+                //WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+                WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+                0, 0 //End
+            };
+            
+            HGLRC share_context = 0;
+            HGLRC modern_gl_context = wglCreateContextAttribsARB(window->device_context,share_context,context_attrib_list );
+        
+            if(modern_gl_context)
+            {
+                if(wglMakeCurrent(window->device_context, modern_gl_context))
+                {
+                    wglDeleteContext(window->rendering_context);
+                    window->rendering_context = modern_gl_context;
+                }
+            }
+        }
+        else
+        {
+            //@TODO: Could not create modern gl context, old version of OGL
+        }
+
+        //@TODO: Get OpenGL context info
+        char* vendor     = (char *)glGetString(GL_VENDOR);
+        char* renderer   = (char *)glGetString(GL_RENDERER);
+        char* version    = (char *)glGetString(GL_VERSION);
+        char* extensions = (char *)glGetString(GL_EXTENSIONS);
     }
     else
     {
-        //@TODO: Why did we fail?
-        return false;
+        SGL_Assert(!"We should not be here!");
     }
 
     ReleaseDC(window->handle, window->device_context);
