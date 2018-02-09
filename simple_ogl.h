@@ -32,9 +32,47 @@
 //
 // 
 //
+// After defining SIMPLE_OGL_IMPLEMENTATION
+//
+// To create a default window:
+//
+// 1) Declare a SGLWindow 
+// 2) Call sgl_window
+//
+// To specify some different options for your window:
+//  1)
+//      - You can either directly set the values of the SGLWindow struct
+//      - Or call sgl_platform_window_setup with your desired values
+//  2)
+//      - Call sgl_window
+// 
+// For more information check the [DEFAULT EXAMPLE] section for a running example that is ready to use.
+// 
 //===============================================================================
+// Declaring and Loading OpenGL funtions
+// 
+// The section [OpenGL Function Declarations] contains an IMCOMPLETE (very imcomplete) and basic
+// list of OpenGL functions. 
+// 
+// Most definetely you will need to add and load new functions if you use this library.
+// To add a new OpenGL function you do two things :
+//
+// 1) Add the function declaration of the GL function you want in the [DECLARE NEW GL FUNCTION] section,
+//    using the DECLARE_GL_FUNC_PTR macro. All you need to know is the function signature.
+//    In that section you can see plenty of other examples of how to declare these. 
+//
+// 2) Load the function in sgl_load_gl_functions() .
+//    At the end of sgl_load_gl_functions() there is a section [LOAD NEW GL FUNCTION] ,
+//    this is where you use the GET_GL_FUNC_SAFE macro to load the function you declared in step 1.
+//
+//===============================================================================
+//
 // API  : API reference can be found further down.
 //        In the following sections (search for) :
+//          [Win32 Create an OpenGL ready window]  -> Win32 Window Creation API
+//          [DECLARE NEW GL FUNCTION]              -> Declare new GL function that you need
+//          [LOAD NEW GL FUNCTION]                 -> Load new GL function that you need (must declare first)
+//          [DEFAULT EXAMPLE]                      -> Ready to run examples.
 //===============================================================================  
 
 
@@ -135,7 +173,7 @@ typedef uint64_t    	GLuint64;
 
 
 //=============================================================================
-// API - Win32 Create an OpenGL ready window.
+// API - [Win32 Create an OpenGL ready window]
 //
 //=============================================================================
 
@@ -231,7 +269,7 @@ void sgl_win32_window_toggle_fullscreen(SGLWindow* window);
    #error No other OS defined!
 #endif //_WIN32
 
-//OpenGL Function Declarations --------------------------------------------------------------------------------
+//[OpenGL Function Declarations] --------------------------------------------------------------------------------
 
 	DECLARE_GL_FUNC_PTR(void, glActiveTexture, (GLenum))
 	DECLARE_GL_FUNC_PTR(void, glMultiDrawElements, (GLenum, const GLsizei *, GLenum, const void *const *, GLsizei))
@@ -270,10 +308,10 @@ void sgl_win32_window_toggle_fullscreen(SGLWindow* window);
     DECLARE_GL_FUNC_PTR(void, glGetProgramInfoLog, (GLuint, GLsizei, GLsizei *, GLchar *))
     DECLARE_GL_FUNC_PTR(void, glDetachShader, (GLuint, GLuint))
     
-    //[DECLARE NEW FUNCTION]
+    //[DECLARE NEW GL FUNCTION]
     //Declare any new functions here...
 
-//END OpenGL Function Delarations -------------------------------------------------------------------------------------------------------
+//[END OpenGL Function Delarations] -------------------------------------------------------------------------------------------------------
 
 void sgl_load_gl_functions()
 {
@@ -515,9 +553,22 @@ sgl_window(SGLWindow* window,HINSTANCE instance,win32_window_callback* window_ca
 
 //===============================================================================  
 // [DEFAULT EXAMPLE]
+//
+// This is a ready to run simple example.
+// 
+// To use the example :
+//
+// 1) #define SGL_SIMPLE_EXAMPLE
+// 
+// 2) Copy the WinMain from [Win32 Example Program]
+//
 //=============================================================================== 
 
+
+
 #ifdef SGL_DEFAULT_EXAMPLE
+
+#include <stdio.h>
 
 //[Win32 Default Example] ---------------------
 #ifdef _WIN32 
@@ -587,6 +638,30 @@ sgl_default_win32_process_msgs(void)
         DispatchMessageA(&message);               
     }
 }
+
+/*[Win32 Example Program]
+
+int CALLBACK
+WinMain(HINSTANCE Instance,
+        HINSTANCE PrevInstance,
+        LPSTR CommandLine,
+        int ShowCode)
+{
+
+    HMODULE module = GetModuleHandle(0);
+    sgl_window(&default_main_window,Instance,sgl_win32_window_callback);
+    //Default Example
+    sgl_init_default_state();
+    //Loop
+    while(default_main_window.running)
+    {
+        sgl_win32_process_msgs();
+        sgl_default_render(&default_main_window);
+    }   
+    return 0;
+}
+
+*/
 
 #else
     //@TODO: Other OS
