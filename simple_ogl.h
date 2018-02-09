@@ -37,7 +37,15 @@
 //        In the following sections (search for) :
 //===============================================================================  
 
+
 //@TODO: Need to link to OpenGL32.lib
+
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include <gl/gl.h>
+#endif //_WIN32
 
 
 
@@ -58,50 +66,47 @@ typedef int32 bool32;
 #define local_persist   static
 
 // [INTERNAL] Utility Macros
-
-#define SGL_Assert(Expression) if(!(Expression)) {*(int *)0 = 0;}
-
 #define Bytes(n)  (n)
 #define KiloBytes(n)  (Bytes(n)*1024)
 #define InvalidCodePath SGL_Assert(!"InvalidCodePath")
 #define InvalidDefaultCase default: {InvalidCodePath;} break
-
-//[INTERNAL] OpenGL Enums and Types not found in gl.h
-//@NOTE: gl.h can be found in almost all win32 systems while the other headers are not usually present.
-
+#define SGL_Assert(Expression) if(!(Expression)) {*(int *)0 = 0;}
 
 #ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <gl/gl.h>
+//[INTERNAL] Function Pointers Typedefs
+#define WIN32_WINDOW_CALLBACK(name) LRESULT CALLBACK name(HWND Window,UINT Message,WPARAM WParam,LPARAM LParam)
+typedef WIN32_WINDOW_CALLBACK(win32_window_callback);
 #endif //_WIN32
 
+//[INTERNAL] OpenGL Enums and Types not found in gl.h
+
+//@NOTE: gl.h can be found in almost all win32 systems while the other headers are not usually present.
 typedef char			GLchar;
 typedef ptrdiff_t		GLsizeiptr;
 typedef uint64_t    	GLuint64;
 
 //Enums in glcorearb.h from https://www.khronos.org/registry/OpenGL/index_gl.php#headers
-#define GL_TEXTURE0								0x84C0
-#define GL_TEXTURE1								0x84C1
-#define GL_TEXTURE_RECTANGLE					0x84F5
-#define GL_RGBA_INTEGER							0x8D99
-#define GL_HALF_FLOAT							0x140B
-#define GL_RGBA16UI								0x8D76
-#define GL_RGBA16F								0x881A
-#define GL_VERTEX_SHADER						0x8B31
-#define GL_FRAGMENT_SHADER						0x8B30
-#define GL_ARRAY_BUFFER							0x8892
-#define GL_ELEMENT_ARRAY_BUFFER					0x8893
-#define GL_STATIC_DRAW							0x88E4
-#define GL_WRITE_ONLY							0x88B9
-#define GL_QUERY_RESULT							0x8866
-#define GL_TIME_ELAPSED							0x88BF
-#define GL_TIMESTAMP							0x8E28
-#define GL_FRAMEBUFFER_SRGB						0x8DB9
-#define GL_COMPILE_STATUS                       0x8B81
-#define GL_INFO_LOG_LENGTH                      0x8B84
-#define GL_GEOMETRY_SHADER                      0x8DD9
-#define GL_LINK_STATUS                          0x8B82
+    #define GL_TEXTURE0								0x84C0
+    #define GL_TEXTURE1								0x84C1
+    #define GL_TEXTURE_RECTANGLE					0x84F5
+    #define GL_RGBA_INTEGER							0x8D99
+    #define GL_HALF_FLOAT							0x140B
+    #define GL_RGBA16UI								0x8D76
+    #define GL_RGBA16F								0x881A
+    #define GL_VERTEX_SHADER						0x8B31
+    #define GL_FRAGMENT_SHADER						0x8B30
+    #define GL_ARRAY_BUFFER							0x8892
+    #define GL_ELEMENT_ARRAY_BUFFER					0x8893
+    #define GL_STATIC_DRAW							0x88E4
+    #define GL_WRITE_ONLY							0x88B9
+    #define GL_QUERY_RESULT							0x8866
+    #define GL_TIME_ELAPSED							0x88BF
+    #define GL_TIMESTAMP							0x8E28
+    #define GL_FRAMEBUFFER_SRGB						0x8DB9
+    #define GL_COMPILE_STATUS                       0x8B81
+    #define GL_INFO_LOG_LENGTH                      0x8B84
+    #define GL_GEOMETRY_SHADER                      0x8DD9
+    #define GL_LINK_STATUS                          0x8B82
 
 
 
@@ -128,18 +133,106 @@ typedef uint64_t    	GLuint64;
 
 #endif //_WIN32
 
+
+//=============================================================================
+// API - Win32 Create an OpenGL ready window.
+//
+//=============================================================================
+
+struct SGLWindow {
+    //platorm independent part
+    bool32 initialized;
+    int32 width;
+    int32 height;
+    char* title;
+
+    bool32 fullscreen;
+    bool32 running;
+
+    union 
+    {
+        //Win32
+        struct {
+            HWND  handle;
+            WINDOWPLACEMENT window_position;
+            HDC device_context;
+            HGLRC rendering_context;    
+        };
+        //@TODO: Other OS
+    };
+};
+
+// This is used to setup the window before creating it.
+// You can also set these values directly in the struct if you prefer.
+//
+// window           - pointer to the SGLWindow struct
+// title            - the window title
+// width and height - window widht and height.
+// full_screen      - whether we want to create a fullscreen window or not. 
+void  sgl_win32_window_setup(SGLWindow* window,char* title = "SimpleOGL Window", int32 width = 800, int32 height = 600, bool32 full_screen = 0);
+
+
+// This function can be called without setting any paramaters of the SGLWindow struct,
+// if this is the case and the SGLWindow is not initialized we will get a default window.
+// In Win32 OS the default can be seen as the default params in the sgl_win32_window_setup function.
+// 
+// window          - pointer to a SGLWindow struct
+// instance        - the HINSTANCE Instance arg passed in the WinMain function.
+// window_callback - a pointer to a Windows Window Callback function.
+//                   Windows needs a function like this to handle window events.
+//                   the function has the following signature :
+//                     LRESULT CALLBACKWindowCallback(HWND Window,UINT Message, WPARAM WParam, LPARAM LParam);
+//
+//You can see an example of a callback function in the [Win32 Default Example] Section further below
+//where the function  sgl_default_win32_wnd_callback is defined
+void sgl_win32_window_create(SGLWindow* window,HINSTANCE instance,win32_window_callback* window_callback);
+
+//This function sets up an OpenGL modern context to work with our window.
+//All we need is to pass a pointer to a SGLWindow struct, optionally we can specify a major and minor version
+//of the OpenGL context we would like to get.
+//For example if we specify major = 3 and minor = 0 we will be requesting a Opengl version 3.0 context.
+//If we don't specify major and minor then we will get the lastest supported version in our system.
+//
+//window        - pointer to SGLWindow struct
+//major_version - desired major version of OpenGL
+//minor_version - desired minor version of OpenGL
+bool32 sgl_win32_window_ogl_setup(SGLWindow* window, int32 major_version = 0, int32 minor_version = 0);
+
+//This is the simplest call we can make to create a window (in any supported platform).
+//This functions is basically the equivalent of calling
+//  sgl_win32_window_create and sgl_win32_window_ogl_setup and it is all it is doing internally.
+void sgl_window(SGLWindow* window,HINSTANCE instance,win32_window_callback* window_callback);
+
+//This is a helper function that toggles between fullscreen and windowed window.
+//window - pointer to SGLWindow struct 
+void sgl_win32_window_toggle_fullscreen(SGLWindow* window);
+
+//END API -------------------------------
+
+//===============================================================================  
+// [IMPLEMENTATION]
+//=============================================================================== 
+#ifdef SIMPLE_OGL_IMPLEMENTATION
+
+//
+//[OpenGL Functions] ---------------------
+
 //@TODO: Explain this bit more
 //Macro for Declaring OpenGL Function Pointers
 #define DECLARE_GL_FUNC_PTR(return_type, func_name, params) typedef return_type func_name##_func_signature params; \
                                                             func_name##_func_signature *func_name = nullptr; 
 
+#ifdef _WIN32
 //Macro for getting the adress of the given OpenGL function and checking we have a valid address (not null).
 #define GET_GL_FUNC_SAFE(name) name = (name##_func_signature *)wglGetProcAddress(#name); \
                                SGL_Assert(name);
+#else
+    //@TODO: Other OS
+   #error No other OS defined!
+#endif //_WIN32
 
+//OpenGL Function Declarations --------------------------------------------------------------------------------
 
-//@FIXME : IMCOMPLETE LIST!
-// DECLARING ALL THE OPENGL FUNCTIONS WE WILL NEED --------------------------------------------------------------------------------
 	DECLARE_GL_FUNC_PTR(void, glActiveTexture, (GLenum))
 	DECLARE_GL_FUNC_PTR(void, glMultiDrawElements, (GLenum, const GLsizei *, GLenum, const void *const *, GLsizei))
 	DECLARE_GL_FUNC_PTR(void, glEnableVertexAttribArray, (GLuint))
@@ -176,37 +269,11 @@ typedef uint64_t    	GLuint64;
     DECLARE_GL_FUNC_PTR(void, glGetProgramiv, (GLuint, GLenum, GLint *)) 
     DECLARE_GL_FUNC_PTR(void, glGetProgramInfoLog, (GLuint, GLsizei, GLsizei *, GLchar *))
     DECLARE_GL_FUNC_PTR(void, glDetachShader, (GLuint, GLuint))
+    
+    //[DECLARE NEW FUNCTION]
+    //Declare any new functions here...
 
-// END GL FUNCTION DECLARATION -------------------------------------------------------------------------------------------------------
-//
-//
-//
-
-
-
-
-struct SGLWindow {
-    //platorm independent part
-    bool32 initialized;
-    int32 width;
-    int32 height;
-    char* title;
-
-    bool32 full_screen;
-    bool32 running;
-
-    union 
-    {
-        //Win32
-        struct {
-            HWND  handle;
-            WINDOWPLACEMENT window_position;
-            HDC device_context;
-            HGLRC rendering_context;    
-        };
-        //@TODO: Other OS
-    };
-};
+//END OpenGL Function Delarations -------------------------------------------------------------------------------------------------------
 
 void sgl_load_gl_functions()
 {
@@ -246,20 +313,20 @@ void sgl_load_gl_functions()
     GET_GL_FUNC_SAFE(glGetProgramiv)
     GET_GL_FUNC_SAFE(glGetProgramInfoLog)
     GET_GL_FUNC_SAFE(glDetachShader)
+
+    //[LOAD NEW FUNCTION]
+    // Load any other functions you might need here.
 }
+//
+//[END OpenGL Functions] ---------------------
 
 //
-// Win32 ---------------------
+//[Win32] ---------------------
 
 //@TODO: The default Window32 callback will need to link to User32.lib
 //@TODO: SwapBuffers will need to link to Gdi32.lib
 
 #ifdef _WIN32
-
-
-//[INTERNAL] Function Pointers Typedefs
-#define WIN32_WINDOW_CALLBACK(name) LRESULT CALLBACK name(HWND Window,UINT Message,WPARAM WParam,LPARAM LParam)
-typedef WIN32_WINDOW_CALLBACK(win32_window_callback);
 
 //[INTERNAL] - Declaring Win32 specific OpenGL function pointers.
 DECLARE_GL_FUNC_PTR(BOOL ,wglChoosePixelFormatARB, (HDC , const int *, const FLOAT *, UINT , int *, UINT *))
@@ -267,14 +334,14 @@ DECLARE_GL_FUNC_PTR(HGLRC ,wglCreateContextAttribsARB, (HDC , HGLRC , const int 
 
 
 internal void 
-sgl_win32_window_setup(SGLWindow* window,char* title = "SimpleOGL Window", int32 width = 800, int32 height = 600, bool32 full_screen = 0)
+sgl_win32_window_setup(SGLWindow* window,char* title, int32 width, int32 height, bool32 fullscreen)
 {    
     window->initialized = true;
     window->width  = width;//1920
     window->height = height;//1080
     window->handle = 0;
     window->title = title;
-    window->full_screen = full_screen;
+    window->fullscreen = fullscreen;
     window->running = true;
     window->window_position = {};
 }
@@ -319,9 +386,8 @@ sgl_win32_window_create(SGLWindow* window,HINSTANCE instance,win32_window_callba
     }
 }
 
-//@TODO: Check the name on this.
 internal bool32
-sgl_win32_window_ogl_setup(SGLWindow* window, int32 major_version = 0, int32 minor_version = 0)
+sgl_win32_window_ogl_setup(SGLWindow* window, int32 major_version, int32 minor_version)
 {
     window->device_context = GetDC(window->handle);
 
@@ -430,34 +496,39 @@ sgl_win32_window_toggle_fullscreen(SGLWindow* window)
     }
 }
 
+//@NOTE: The simplest API call we can make to create a window, this will create a default window.
+internal void
+sgl_window(SGLWindow* window,HINSTANCE instance,win32_window_callback* window_callback)
+{
+    sgl_win32_window_create(window,instance,window_callback);
+    sgl_win32_window_ogl_setup(window);
+}
+
 #endif //_WIN32
 
 
-// END Win32 ---------------------
-
-// Platform Independent ---------------------
+//[END Win32] ---------------------
 
 
-// END Platform Independent ---------------------
 
 
-// Default Example ---------------------
+
+//===============================================================================  
+// [DEFAULT EXAMPLE]
+//=============================================================================== 
 
 #ifdef SGL_DEFAULT_EXAMPLE
 
-//Win32 Default Example
+//[Win32 Default Example] ---------------------
 #ifdef _WIN32 
-global_variable SGLWindow default_main_window = {};
 
-
-
-
-//@TODO: Move this up to the API section.
 //@NOTE: Change this define to point to your own Win32 Window Callback Function.
-#define sgl_window_callback sgl_default_win32_wnd_callback 
+#define sgl_win32_window_callback sgl_default_win32_wnd_callback 
 //@NOTE: Change this define to point to your own function that processes Win32 Messages.
 #define sgl_win32_process_msgs sgl_default_win32_process_msgs
 //
+
+global_variable SGLWindow default_main_window = {};
 
 internal LRESULT CALLBACK
 sgl_default_win32_wnd_callback(HWND window, UINT message, WPARAM WParam, LPARAM LParam)
@@ -516,7 +587,6 @@ sgl_default_win32_process_msgs(void)
         DispatchMessageA(&message);               
     }
 }
-
 
 #else
     //@TODO: Other OS
@@ -708,4 +778,36 @@ void sgl_default_render(SGLWindow* window)
 
 #endif // SGL_DEFAULT_EXAMPLE
 
-// END Default Example ---------------------
+//[END Default Example] ---------------------
+
+#endif // SIMPLE_OGL_IMPLEMENTATION
+
+
+
+
+
+//
+
+/*
+The MIT License (MIT)
+
+Copyright (c) 2018 Filipe Rasoilo www.rasoilo.com
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
