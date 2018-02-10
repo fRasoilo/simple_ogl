@@ -75,14 +75,24 @@
 //          [DEFAULT EXAMPLE]                      -> Ready to run examples.
 //===============================================================================  
 
+// ***NOTE TO ANY USER OF THIS LIBRARY***
+//
+//  On Win32 this library uses #pragma comment to link to the following static libraries :
+//    - OpenGL32.lib
+//    - Gdi32.lib
+//  
+//  If using the default example:
+//    -User32.lib
 
-//@TODO: Need to link to OpenGL32.lib
 
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <gl/gl.h>
+
+#pragma comment(lib, "OpenGL32.lib")
+
 #endif //_WIN32
 
 
@@ -361,10 +371,11 @@ void sgl_load_gl_functions()
 //
 //[Win32] ---------------------
 
-//@TODO: The default Window32 callback will need to link to User32.lib
-//@TODO: SwapBuffers will need to link to Gdi32.lib
 
 #ifdef _WIN32
+
+//For SwapBuffers
+#pragma comment(lib, "Gdi32.lib");
 
 //[INTERNAL] - Declaring Win32 specific OpenGL function pointers.
 DECLARE_GL_FUNC_PTR(BOOL ,wglChoosePixelFormatARB, (HDC , const int *, const FLOAT *, UINT , int *, UINT *))
@@ -572,6 +583,9 @@ sgl_window(SGLWindow* window,HINSTANCE instance,win32_window_callback* window_ca
 
 //[Win32 Default Example] ---------------------
 #ifdef _WIN32 
+
+//For the win32 windows callback
+#pragma comment(lib, "User32.lib");
 
 //@NOTE: Change this define to point to your own Win32 Window Callback Function.
 #define sgl_win32_window_callback sgl_default_win32_wnd_callback 
