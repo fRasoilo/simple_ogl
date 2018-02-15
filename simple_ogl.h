@@ -6,7 +6,7 @@
 //=============================================================================
 // Summary :
 //
-// simple_ogl is small library that provides a quick and simple way to create an 
+// simple_ogl is small library written in C++ that provides a quick and simple way to create an 
 // OpenGL ready Window.
 //
 // It is a single file header that should be very easy to drop-in and start using in any pre-existing project.
@@ -16,6 +16,11 @@
 // Revision History :
 //
 //  
+//
+//===============================================================================  
+// Todo List :
+// 
+//  - Support for differnt OS
 //
 //===============================================================================  
 //  You MUST define SIMPLE_OGL_IMPLEMENTATION
