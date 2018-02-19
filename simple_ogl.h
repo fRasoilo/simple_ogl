@@ -380,7 +380,7 @@ void sgl_load_gl_functions()
 #ifdef _WIN32
 
 //For SwapBuffers
-#pragma comment(lib, "Gdi32.lib");
+#pragma comment(lib, "Gdi32.lib")
 
 //[INTERNAL] - Declaring Win32 specific OpenGL function pointers.
 DECLARE_GL_FUNC_PTR(BOOL ,wglChoosePixelFormatARB, (HDC , const int *, const FLOAT *, UINT , int *, UINT *))
@@ -574,7 +574,7 @@ sgl_window(SGLWindow* window,HINSTANCE instance,win32_window_callback* window_ca
 // 
 // To use the example :
 //
-// 1) #define SGL_SIMPLE_EXAMPLE
+// 1) #define SGL_DEFAULT_EXAMPLE
 // 
 // 2) Copy the WinMain from [Win32 Example Program]
 //
@@ -590,7 +590,7 @@ sgl_window(SGLWindow* window,HINSTANCE instance,win32_window_callback* window_ca
 #ifdef _WIN32 
 
 //For the win32 windows callback
-#pragma comment(lib, "User32.lib");
+#pragma comment(lib, "User32.lib")
 
 //@NOTE: Change this define to point to your own Win32 Window Callback Function.
 #define sgl_win32_window_callback sgl_default_win32_wnd_callback 
